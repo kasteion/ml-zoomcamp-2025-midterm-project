@@ -2,7 +2,28 @@ import pickle
 import xgboost as xgb
 from fastapi import FastAPI
 import uvicorn
-from typing import Dict, Any
+from pydantic import BaseModel, Field, field_validator
+import pycountry
+from typing import Optional
+
+COUNTRY_CODES = {country.alpha_2 for country in pycountry.countries}
+
+class Match(BaseModel):
+    player1_civilization: int = Field(ge=0, le=36)
+    player1_rating: float
+    player1_country: str
+    player2_civilization: int = Field(ge=0, le=36)
+    player2_rating: float
+    player2_country: str
+
+    @field_validator('player1_country', 'player2_country')
+    @classmethod
+    def validate_country(cls, v):
+        v = v.upper()
+        if v not in COUNTRY_CODES:
+            raise ValueError(f"{v} is not a valid country code")
+        return v
+
 
 app = FastAPI(title="winner-prediction")
 
@@ -20,11 +41,20 @@ def predict_single(match):
     X = dv.transform([match])
     d = xgb.DMatrix(X, feature_names=list(dv.get_feature_names_out()))
     probability = model.predict(d)
-    return float(probability)
+    return float(probability[0])
 
 @app.post("/predict")
-def predict(match: Dict[str, Any]):
-    probability = predict_single(match)
+def predict(match_payload: Match):
+    match = Match.model_validate(match_payload.model_dump())
+    probability = predict_single({
+        'civ_p1': match.player1_civilization,
+        'civ_p2': match.player2_civilization,
+        'rating_p1': match.player1_rating,
+        'rating_p2': match.player2_rating,
+        'country_p1': match.player1_country,
+        'country_p2': match.player2_country,
+        'rating_diff': match.player1_rating - match.player2_rating
+    })
     return {
         "win_probabilty": probability,
         "winner": "player_1" if probability >= 0.5 else "player_2"
