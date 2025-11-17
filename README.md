@@ -96,4 +96,4 @@ Or try it out through the swagger docs
 
 https://ml-zoomcamp-2025-midterm-project-blue-sun-3900.fly.dev/docs#/default/predict_predict_post
 
-[swagger docs](https://github.com/kasteion/ml-zoomcamp-2025-midterm-project/blob/main/assets/swagger_docs.png)
+![swagger docs](https://github.com/kasteion/ml-zoomcamp-2025-midterm-project/blob/main/assets/swagger_docs.png)
